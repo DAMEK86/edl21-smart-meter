@@ -3,7 +3,10 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <encode.h>
-#include <secrets.h>
+
+//needed for library
+#include <DNSServer.h>
+#include "WiFiManager.h"          //https://github.com/tzapu/WiFiManager
 
 // Set web server port number to 80
 ESP8266WebServer server(80);
@@ -199,26 +202,38 @@ void handleNotFound(){
   digitalWrite(led, 0);
 }
 
+void wifimanager() {
+  Serial.begin(BAUDRATE);
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
+
+  //reset saved settings
+  //wifiManager.resetSettings();
+  
+  wifiManager.setHostname("smart-meter");
+  //set custom ip for portal
+  //wifiManager.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
+
+  //fetches ssid and pass from eeprom and tries to connect
+  //if it does not connect it starts an access point with the specified name
+  //here  "AutoConnectAP"
+  //and goes into a blocking loop awaiting configuration
+  wifiManager.autoConnect("smart-meter-AP");
+  //or use this for auto generated name ESP + ChipID
+  //wifiManager.autoConnect();
+
+  
+  //if you get here you have connected to the WiFi
+  Serial.println("connected...yeey :)");
+}
+
 void setup() {
   Serial.begin(BAUDRATE);         // Start the Serial communication to send messages to the computer
   delay(10);
   Serial.println('\n');
 
-  WiFi.mode(WIFI_STA);
-  WiFi.hostname("smart-meter");
-  WiFi.begin(ssid, password);
-
-  Serial.println("Connecting ..."); 
-  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
-    delay(250);
-    Serial.print('.');
-  }
-
-  Serial.println('\n');
-  Serial.print("Connected to ");
-  Serial.println(WiFi.SSID());              // Tell us what network we're connected to
-  Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());           // Send the IP address of the ESP8266 to the computer
+  wifimanager();
   
   ArduinoOTA.setHostname("smart-meter");
   ArduinoOTA.setPassword("esp8266");
